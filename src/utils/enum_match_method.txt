@@ -1,0 +1,17 @@
+    if let Some(first_line) = lines.first() {
+        // Diviser la première ligne en parties (méthode, chemin, version)
+        let parts: Vec<&str> = first_line.split_whitespace().collect();
+        let message = parts.get(1).unwrap_or(&crate::http::_struct::StatusCode::BadGateway.response_string());
+        let method = parts.get(0).unwrap_or(&message);
+        let request_method = match *method {
+            "GET" => Method::GET,
+            "POST" => Method::POST,
+            "PUT" => Method::PUT,
+            "DELETE" => Method::DELETE,
+            "PATCH" => Method::PATCH,
+            "OPTIONS" => Method::OPTIONS,
+            "HEAD" => Method::HEAD,
+            "CONNECT" => Method::CONNECT,
+            "TRACE" => Method::TRACE,
+            _ => return "", // Retourner une chaîne vide si la méthode n'est pas reconnue
+        };
