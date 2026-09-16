@@ -22,16 +22,16 @@ pub struct Request<'a> {
      TRACE,
  }
 
- #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+ #[derive(Debug, PartialEq, Eq, Hash)]
  #[allow(dead_code)]
  pub struct Response {
+     pub version: Version,
      pub status_code: StatusCode,
-     pub status_message: &'static str,
      pub headers: Vec<(String, String)>,
      pub body: Option<String>,
  }
 
- #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+ #[derive(Debug, PartialEq, Eq, Hash)]
  #[allow(dead_code)]
  pub struct StatusCode(u16);
 
@@ -41,9 +41,16 @@ pub struct Request<'a> {
         pub const BAD_REQUEST: StatusCode = StatusCode(400);
         pub const NOT_FOUND: StatusCode = StatusCode(404);
         pub const INTERNAL_SERVER_ERROR: StatusCode = StatusCode(500);
-        pub const MISSING_METHODE: StatusCode = StatusCode(501);
+        pub const NOT_IMPLEMENTED: StatusCode = StatusCode(501);
         pub const BAD_GATEWAY: StatusCode = StatusCode(502);
         pub const SERVICE_UNAVAILABLE: StatusCode = StatusCode(503);
+        pub const HTTP_VERSION_NOT_SUPPORTED: StatusCode = StatusCode(505);
+
+        // champ interne privé : seul ce module peut construire un StatusCode arbitraire,
+        // mais n'importe qui doit pouvoir lire le nombre pour sérialiser la status-line.
+        pub fn as_u16(&self) -> u16 {
+            self.0
+        }
 
         pub fn response_string(&self) -> Option<&'static str> {
             match *self {
@@ -51,22 +58,35 @@ pub struct Request<'a> {
                 StatusCode::BAD_REQUEST => Some("Bad Request"),
                 StatusCode::NOT_FOUND => Some("Not Found"),
                 StatusCode::INTERNAL_SERVER_ERROR => Some("Internal Server Error"),
-                StatusCode::MISSING_METHODE => Some("Not Implemented"),
+                StatusCode::NOT_IMPLEMENTED => Some("Not Implemented"),
                 StatusCode::BAD_GATEWAY => Some("Bad Gateway"),
                 StatusCode::SERVICE_UNAVAILABLE => Some("Service Unavailable"),
+                StatusCode::HTTP_VERSION_NOT_SUPPORTED => Some("HTTP Version Not Supported"),
                 _ => None,
             }
         }
 
     }
 
-  #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+  #[derive(Debug, PartialEq, Eq, Hash)]
  #[allow(dead_code)]
 pub enum Version {
     HTTP10,
     HTTP11,
     HTTP20,
     HTTP30,
+}
+
+impl Version {
+    // l'inverse de FromStr : reconvertit l'enum en texte pour la status-line de la réponse.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Version::HTTP10 => "HTTP/1.0",
+            Version::HTTP11 => "HTTP/1.1",
+            Version::HTTP20 => "HTTP/2.0",
+            Version::HTTP30 => "HTTP/3.0",
+        }
+    }
 }
 
 impl std::str::FromStr for Version {
@@ -83,7 +103,7 @@ impl std::str::FromStr for Version {
     }
 }
 
- #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+ #[derive(Debug, PartialEq, Eq, Hash)]
  #[allow(dead_code)]
 pub struct Header<'a> {
     pub name: &'a str,
@@ -91,7 +111,7 @@ pub struct Header<'a> {
 }
 
 
- #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+ #[derive(Debug, PartialEq, Eq, Hash)]
  #[allow(dead_code)]
 pub struct Body<'a> {
     pub content: &'a str,
